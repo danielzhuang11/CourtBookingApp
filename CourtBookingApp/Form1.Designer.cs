@@ -40,6 +40,8 @@
             this.cbTime = new System.Windows.Forms.ComboBox();
             this.lbPeriod = new System.Windows.Forms.Label();
             this.cbPeriod = new System.Windows.Forms.ComboBox();
+            this.lbNote = new System.Windows.Forms.Label();
+            this.cbName = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             // 
             // lbUsername
@@ -95,9 +97,9 @@
             // 
             // tbTime
             // 
-            this.tbTime.Location = new System.Drawing.Point(142, 194);
+            this.tbTime.Location = new System.Drawing.Point(307, 167);
             this.tbTime.Name = "tbTime";
-            this.tbTime.Size = new System.Drawing.Size(159, 20);
+            this.tbTime.Size = new System.Drawing.Size(94, 20);
             this.tbTime.TabIndex = 6;
             this.tbTime.Visible = false;
             // 
@@ -146,11 +148,30 @@
             this.cbPeriod.Size = new System.Drawing.Size(159, 21);
             this.cbPeriod.TabIndex = 11;
             // 
+            // lbNote
+            // 
+            this.lbNote.AutoSize = true;
+            this.lbNote.Location = new System.Drawing.Point(65, 200);
+            this.lbNote.Name = "lbNote";
+            this.lbNote.Size = new System.Drawing.Size(60, 13);
+            this.lbNote.TabIndex = 12;
+            this.lbNote.Text = "Notification";
+            // 
+            // cbName
+            // 
+            this.cbName.FormattingEnabled = true;
+            this.cbName.Location = new System.Drawing.Point(142, 197);
+            this.cbName.Name = "cbName";
+            this.cbName.Size = new System.Drawing.Size(159, 21);
+            this.cbName.TabIndex = 13;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(397, 429);
+            this.ClientSize = new System.Drawing.Size(403, 429);
+            this.Controls.Add(this.cbName);
+            this.Controls.Add(this.lbNote);
             this.Controls.Add(this.cbPeriod);
             this.Controls.Add(this.lbPeriod);
             this.Controls.Add(this.cbTime);
@@ -184,6 +205,8 @@
         private System.Windows.Forms.ComboBox cbTime;
         private System.Windows.Forms.Label lbPeriod;
         private System.Windows.Forms.ComboBox cbPeriod;
+        private System.Windows.Forms.Label lbNote;
+        private System.Windows.Forms.ComboBox cbName;
     }
 }
 

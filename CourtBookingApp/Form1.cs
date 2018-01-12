@@ -14,6 +14,12 @@ using OpenQA.Selenium.Support.UI;
 using System.Threading;
 using System.Globalization;
 
+using Senparc.Weixin.MP.CommonAPIs;
+using Senparc.Weixin.MP.AdvancedAPIs;
+using Senparc.Weixin.MP.AdvancedAPIs.User;
+using Senparc.Weixin.MP.AdvancedAPIs.TemplateMessage;
+using Senparc.Weixin.MP.Entities;
+
 namespace CourtBookingApp
 {
     public partial class Form1 : Form
@@ -23,6 +29,7 @@ namespace CourtBookingApp
         private bool completFlag = false;
         private string myCourtTime="";
         private string myCourtPeriod = "";
+        private string notificationName = "";
         private string userNameStr;
         private string passWordStr;
         private string notificationStr;
@@ -84,13 +91,17 @@ namespace CourtBookingApp
             cbPeriod.Items.Add("60 minutes");
             cbPeriod.Items.Add("90 minutes");
             cbPeriod.Items.Add("120 minutes");
+
+            var tokenResult = CommonApi.GetToken("wxb52657827a246f81", "ce3f87fd605221d29cd799c21169d5c1");
+            listNames(tokenResult);
+
+
         }
 
         private DateTime preProc()
         {
             completFlag = false;
             
-
             tbUserName.Text = "zhungtm@hotmail.com";
             tbPassword.Text = "Hello@123";
             tbPassword.UseSystemPasswordChar = true;
@@ -121,6 +132,7 @@ namespace CourtBookingApp
 
         private void btnStart_Click(object sender, EventArgs e)
         {
+            notificationName = cbName.GetItemText(cbName.SelectedItem);
             myCourtTime = cbTime.GetItemText(cbTime.SelectedItem);
             myCourtPeriod = cbPeriod.GetItemText(cbPeriod.SelectedItem);
 
@@ -137,9 +149,10 @@ namespace CourtBookingApp
 
         private void btnTest_Click(object sender, EventArgs e)
         {
+            notificationName = cbName.GetItemText(cbName.SelectedItem);
             myCourtTime = cbTime.GetItemText(cbTime.SelectedItem);
             myCourtPeriod = cbPeriod.GetItemText(cbPeriod.SelectedItem);
-
+           // myCourtTime = tbTime.Text;
             if (myCourtTime == "" || myCourtPeriod == "")
             {
                 MessageBox.Show("Please fill the desired court time and period");
@@ -237,9 +250,10 @@ namespace CourtBookingApp
                 timeChoices = m_driver.FindElement(By.Id("times-to-reserve"));
             }
             catch
-            {
-                closeBrowser();
-                return false;
+            {              
+                completFlag = false;
+                teardown(completFlag);
+                return completFlag;
             }
 
             foreach (var td in timeChoices.FindElements(By.XPath("tbody/tr/td")))
@@ -282,11 +296,149 @@ namespace CourtBookingApp
                 }
             }
 
-         
-            closeBrowser();
+            teardown(completFlag);
+
             return completFlag;
         }
 
+        private void teardown(bool resultFlag)
+        {
+            closeBrowser();
+          
+            var tokenResult = CommonApi.GetToken("wxb52657827a246f81", "ce3f87fd605221d29cd799c21169d5c1");
+            
+            SendToWeChat(tokenResult, resultFlag);
+        }
+
+        private bool isInNameList(string[] nameList, string name)
+        {
+            if (nameList.Count() == 0)
+                return true; // if empty input, always send alarm to WeChat
+
+            for (int i = 0; i < nameList.Count(); i++)
+            {
+                if (name.Trim() == nameList[i].Trim())
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void listNames(AccessTokenResult tokenResult)
+        {
+            string accessToken = "";
+            try
+            {
+                if (tokenResult.access_token.Length > 0 && tokenResult.expires_in > 0)
+                {
+                    accessToken = tokenResult.access_token;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(String.Format("Exception {0}", ex.Message));
+                return;
+            }
+            List<UserInfoJson> userInfoList = new List<UserInfoJson>();
+            if (tokenResult.access_token.Length > 0 && tokenResult.expires_in > 0)
+            {
+                accessToken = tokenResult.access_token;
+                foreach (var id in UserApi.Get(accessToken, "").data.openid)
+                {
+                    var userInfoResult = UserApi.Info(accessToken, id);
+                    cbName.Items.Add(userInfoResult.nickname);
+                    //userInfoList.Add(userInfoResult);
+                    // Console.WriteLine(userInfoList.Count + ".添加：" + userInfoResult.nickname);
+
+                }
+            }
+
+        }
+
+        public bool SendToWeChat(AccessTokenResult tokenResult, bool completeFlag)
+        {
+          
+            notificationName += ",Tom Z. Zhuang";          
+
+            string[] recipientNames = notificationName.Split(',');
+
+            string accessToken = "";
+            try
+            {
+                if (tokenResult.access_token.Length > 0 && tokenResult.expires_in > 0)
+                {
+                    accessToken = tokenResult.access_token;
+                }
+               
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(String.Format("Exception {0}", ex.Message));
+                return false;
+            }
+            List<UserInfoJson> userInfoList = new List<UserInfoJson>();
+            if (tokenResult.access_token.Length > 0 && tokenResult.expires_in > 0)
+            {
+                accessToken = tokenResult.access_token;
+                foreach (var id in UserApi.Get(accessToken, "").data.openid)
+                {
+                    var userInfoResult = UserApi.Info(accessToken, id);
+                    userInfoList.Add(userInfoResult);
+                   
+                }
+            }
+
+            bool nameFlag = false;
+            
+            foreach (var item in userInfoList)
+            {
+                    // check whether input name is in the user list
+                    nameFlag = isInNameList(recipientNames, item.nickname);
+                    
+                    if (nameFlag) //only in the recipient name list
+                    {
+                        string openId = item.openid;
+
+                     
+                        string templateId = "WJ5AW-ANTT5pRbgkaGU6nZZmPYHhoIxGyQX0Z9Bf_eg";
+                        string[] tarray = new string[2];
+                        tarray[0] = myCourtTime + "\r\n";
+                        if (completeFlag)
+                            tarray[1] = "Booked successfully.";
+                        else
+                            tarray[1] = "failed booking.";
+                        var testData = new TestTemplateData()
+                        {
+                            Time = new TemplateDataItem(tarray[0].Trim()),
+                            Result = new TemplateDataItem(tarray[1].Trim()),
+
+                        };
+                        try
+                        {
+                            var result = TemplateApi.SendTemplateMessage(accessToken, openId, templateId, "#FF0000", "", testData);
+                        }
+                        catch
+                        {
+
+                        }
+                    }
+                
+            }
+            return true;
+        }
+
+    }
+
+   
+
+    public class TestTemplateData
+    {
+        public TemplateDataItem Time { get; set; }
+        public TemplateDataItem Result { get; set; }
         
     }
+        
+   
 }
