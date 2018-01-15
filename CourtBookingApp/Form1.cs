@@ -34,6 +34,7 @@ namespace CourtBookingApp
         private string passWordStr;
         private string notificationStr;
         private string[] timeStr = new string[30];
+        private string status = "Failed";
 
         public void generateTimeStr()
         {
@@ -120,7 +121,7 @@ namespace CourtBookingApp
                 dateTime = dateTime.Add(oneDay);
             }
 
-            TimeSpan ts = new TimeSpan(2, 00, 18);
+            TimeSpan ts = new TimeSpan(2, 00, 15);
             DateTime startTime = dateTime.Subtract(ts);
 
             notificationStr = "Program will start from " + startTime.ToShortTimeString(); ;
@@ -149,10 +150,12 @@ namespace CourtBookingApp
 
         private void btnTest_Click(object sender, EventArgs e)
         {
+            tbTime.Visible = true;
             notificationName = cbName.GetItemText(cbName.SelectedItem);
             myCourtTime = cbTime.GetItemText(cbTime.SelectedItem);
             myCourtPeriod = cbPeriod.GetItemText(cbPeriod.SelectedItem);
-           // myCourtTime = tbTime.Text;
+            if (myCourtTime=="")
+                myCourtTime = tbTime.Text;
             if (myCourtTime == "" || myCourtPeriod == "")
             {
                 MessageBox.Show("Please fill the desired court time and period");
@@ -160,6 +163,7 @@ namespace CourtBookingApp
             else
             {
                 DateTime startTime = preProc();
+               
                 SetUpTimer(startTime, true);
             }
         }
@@ -173,11 +177,11 @@ namespace CourtBookingApp
             {
                 if (this.CourtBooking(testFlag))
                 {
-                    notificationStr = "Booked " + myCourtTime + " court.";
+                    notificationStr = "Booked " + myCourtTime + " court. Status message is " + status;
                 }
                 else
                 {
-                    notificationStr = "Failed booking";
+                    notificationStr = "Failed booking. Status message is " + status;
                 }
                 MessageBox.Show(notificationStr);
             
@@ -187,11 +191,11 @@ namespace CourtBookingApp
             {             
                 if (this.CourtBooking(testFlag))
                 {
-                    notificationStr = "Booked " + myCourtTime + " court.";
+                    notificationStr = "Booked " + myCourtTime + " court. Status message is " + status;
                 }
                 else
                 {
-                    notificationStr = "Failed booking";
+                    notificationStr = "Failed booking. Status message is " + status;
                 }
                 MessageBox.Show(notificationStr);
               
@@ -252,6 +256,7 @@ namespace CourtBookingApp
             catch
             {              
                 completFlag = false;
+                status = "No such court time. Failed booking.";
                 teardown(completFlag);
                 return completFlag;
             }
@@ -267,28 +272,38 @@ namespace CourtBookingApp
 
                     if (locationOption == "6" && timeOption == myCourtTime)
                     {
-                        
                         option.Click();
-                        Thread.Sleep(1000);
-
-                        m_driver.SwitchTo().Window(m_driver.WindowHandles.Last());
-                        Thread.Sleep(2000);
-
-                        IWebElement invoiceBox = m_driver.FindElement(By.ClassName("userbox"));
-                        string invoiceText = invoiceBox.Text;
-                        if (invoiceText.Contains("No Invoice"))
+                        if (checkInvoice(testFlag))
                         {
-                            completFlag = true;
+                            // cancel it
                             IWebElement btnLink;
-                            if (testFlag)
-                                btnLink = m_driver.FindElement(By.Id("cancel"));
-                            else
-                                btnLink = m_driver.FindElement(By.Id("confirm"));
+                            btnLink = m_driver.FindElement(By.Id("cancel"));
                             btnLink.Click();
-                      
-                            break;
-                        }
 
+                            // it might be caused by running too early, run it again
+                            Thread.Sleep(2000);
+                            option.Click();
+
+                            if (checkInvoice(testFlag))
+                            {
+                                // still not good so cancel it
+                                btnLink = m_driver.FindElement(By.Id("cancel"));
+                                btnLink.Click();
+                            }
+                            else
+                            {
+                                status = "Booked successfully 2nd time.";
+                            }
+                        }
+                        else // no invoice so book successfully
+                        {
+                            
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        status = "No such court time.";
                     }
 
                     if (completFlag)
@@ -300,6 +315,42 @@ namespace CourtBookingApp
 
             return completFlag;
         }
+
+        // return TRUE if there is invoice
+        // return FALSE if there is no invoice
+        private bool checkInvoice(bool testFlag)
+        {
+            Thread.Sleep(1000);
+
+            m_driver.SwitchTo().Window(m_driver.WindowHandles.Last());
+            Thread.Sleep(2000);
+
+            IWebElement invoiceBox = m_driver.FindElement(By.ClassName("userbox"));
+            IWebElement btnLink;
+            if (invoiceBox.Text.Contains("No Invoice"))
+            {
+                completFlag = true;
+
+                if (testFlag)
+                    btnLink = m_driver.FindElement(By.Id("cancel"));
+                else
+                    btnLink = m_driver.FindElement(By.Id("confirm"));
+                btnLink.Click();
+
+                status = "Booked successfully";
+                completFlag = true;
+                return false;
+            }
+            else
+            {
+                status = "Court is not free.";
+                completFlag = false;
+                return true;
+            }
+
+        }
+
+        
 
         private void teardown(bool resultFlag)
         {
@@ -405,10 +456,11 @@ namespace CourtBookingApp
                         string templateId = "WJ5AW-ANTT5pRbgkaGU6nZZmPYHhoIxGyQX0Z9Bf_eg";
                         string[] tarray = new string[2];
                         tarray[0] = myCourtTime + "\r\n";
-                        if (completeFlag)
+                     /*   if (completeFlag)
                             tarray[1] = "Booked successfully.";
                         else
-                            tarray[1] = "failed booking.";
+                            tarray[1] = "failed booking.";*/
+                        tarray[1] = status;
                         var testData = new TestTemplateData()
                         {
                             Time = new TemplateDataItem(tarray[0].Trim()),
