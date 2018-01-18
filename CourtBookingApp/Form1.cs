@@ -33,7 +33,7 @@ namespace CourtBookingApp
         private string userNameStr;
         private string passWordStr;
         private string notificationStr;
-        private string[] timeStr = new string[30];
+        private string[] timeStr = new string[31];
         private string status = "Failed";
 
         public void generateTimeStr()
@@ -62,6 +62,7 @@ namespace CourtBookingApp
                 tmpStr = i.ToString() + ":30 pm";
                 timeStr[count++] = tmpStr;
             }
+            timeStr[count++] = "10:00 pm";
         }
 
         public void startBrowser()
@@ -99,15 +100,13 @@ namespace CourtBookingApp
 
         }
 
-        private DateTime preProc()
+        private DateTime calculateTime()
         {
-            completFlag = false;
+            completFlag = false;            
             
-            tbUserName.Text = "zhungtm@hotmail.com";
-            tbPassword.Text = "Hello@123";
-            tbPassword.UseSystemPasswordChar = true;
-            userNameStr = tbUserName.Text;
-            passWordStr = tbPassword.Text;
+            //tbPassword.UseSystemPasswordChar = true;
+            //userNameStr = tbUserName.Text;
+            //passWordStr = tbPassword.Text;
            
             
             // calculate starting time
@@ -131,41 +130,50 @@ namespace CourtBookingApp
             return startTime;
         }
 
-        private void btnStart_Click(object sender, EventArgs e)
+        // input is: whether it is a testing 
+        private void preProc(bool testFlag)
         {
+            if (testFlag)
+                tbTime.Visible = true;
+
+            userNameStr = tbUserName.Text;
+            passWordStr = tbPassword.Text;
+
             notificationName = cbName.GetItemText(cbName.SelectedItem);
             myCourtTime = cbTime.GetItemText(cbTime.SelectedItem);
             myCourtPeriod = cbPeriod.GetItemText(cbPeriod.SelectedItem);
 
-            if (myCourtTime == "" || myCourtPeriod == "")
+            if (testFlag )
+            {
+                if (tbTime.Text != "")
+                    myCourtTime = tbTime.Text;
+            }
+
+            if (userNameStr == "" || passWordStr == "")
+            {
+                MessageBox.Show("Please fill username and password");
+            }
+            else if (myCourtTime == "" || myCourtPeriod == "")
             {
                 MessageBox.Show("Please fill the desired court time and period");
             }
             else
             {
-                DateTime startTime = preProc();
-                SetUpTimer(startTime, false);
+                DateTime startTime = calculateTime();
+                SetUpTimer(startTime, testFlag);
             }
+        }
+
+        private void btnStart_Click(object sender, EventArgs e)
+        {
+            // test flag is FALSE
+            preProc(false);          
         }
 
         private void btnTest_Click(object sender, EventArgs e)
         {
-            tbTime.Visible = true;
-            notificationName = cbName.GetItemText(cbName.SelectedItem);
-            myCourtTime = cbTime.GetItemText(cbTime.SelectedItem);
-            myCourtPeriod = cbPeriod.GetItemText(cbPeriod.SelectedItem);
-            if (myCourtTime=="")
-                myCourtTime = tbTime.Text;
-            if (myCourtTime == "" || myCourtPeriod == "")
-            {
-                MessageBox.Show("Please fill the desired court time and period");
-            }
-            else
-            {
-                DateTime startTime = preProc();
-               
-                SetUpTimer(startTime, true);
-            }
+            // test flag is TRUE
+            preProc(true);                   
         }
 
         private System.Threading.Timer timer;
