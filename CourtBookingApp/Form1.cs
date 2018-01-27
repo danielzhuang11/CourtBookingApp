@@ -100,6 +100,27 @@ namespace CourtBookingApp
 
         }
 
+        private bool isTimeNow()
+        {
+            bool rtnVal = false;
+
+            DateTime dateTime = DateTime.ParseExact(myCourtTime,
+                                    "h:mm tt", CultureInfo.InvariantCulture);
+            DateTime current = DateTime.Now;
+
+            TimeSpan ts = new TimeSpan(2, 00, 00);
+            DateTime startTime = dateTime.Subtract(ts);
+
+            TimeSpan timeCheck = startTime.TimeOfDay - current.TimeOfDay;
+            if (timeCheck <= TimeSpan.Zero)
+            {
+                rtnVal = true;
+            }
+
+            return rtnVal;
+
+        }
+
         private DateTime calculateTime()
         {
             completFlag = false;            
@@ -120,7 +141,7 @@ namespace CourtBookingApp
                 dateTime = dateTime.Add(oneDay);
             }
 
-            TimeSpan ts = new TimeSpan(2, 00, 15);
+            TimeSpan ts = new TimeSpan(2, 00, 18);
             DateTime startTime = dateTime.Subtract(ts);
 
             notificationStr = "Program will start from " + startTime.ToShortTimeString(); ;
@@ -136,6 +157,7 @@ namespace CourtBookingApp
             if (testFlag)
                 tbTime.Visible = true;
 
+            // add default username and password here
             userNameStr = tbUserName.Text;
             passWordStr = tbPassword.Text;
 
@@ -253,85 +275,100 @@ namespace CourtBookingApp
             IWebElement searchBtn = m_driver.FindElement(By.Id("reserve-court-search"));
             searchBtn.Click();
 
-            // wait 5 seconds for retriving court information finished
-            Thread.Sleep(5000);
+            // wait 2 seconds for retriving court information finished
+            Thread.Sleep(2000);
             
             IWebElement timeChoices ;
             try
             {
                 timeChoices = m_driver.FindElement(By.Id("times-to-reserve"));
+
+                foreach (var td in timeChoices.FindElements(By.XPath("tbody/tr/td")))
+                {
+
+                    foreach (var option in td.FindElements(By.XPath("a")))
+                    {
+                        string gmtOption = option.GetAttribute("t");
+                        string locationOption = option.GetAttribute("l");
+                        string timeOption = option.Text;
+                      
+                        if (locationOption == "6" && timeOption == myCourtTime)
+                        {
+                            while (true)
+                            {
+                                if (isTimeNow())
+                                    break;
+                               
+                            }
+
+                            Thread.Sleep(1700);
+                            option.Click();
+                            if (checkInvoice(testFlag))
+                            {
+                                // come in here means there is invoice, will be charged money
+                                // cancel it
+                                IWebElement btnLink;
+                                btnLink = m_driver.FindElement(By.Id("cancel"));
+                                btnLink.Click();
+
+                                // it might be caused by running too early, run it again
+                               // Thread.Sleep(1000);
+                                option.Click();
+
+                                if (checkInvoice(testFlag))
+                                {
+                                    // still not good so cancel it
+                                    DateTime timeStamp = DateTime.Now;
+                                    btnLink = m_driver.FindElement(By.Id("cancel"));
+                                    btnLink.Click();
+                                    status = "Court is not free after 2nd time at " + timeStamp.ToString("hh:mm:ss.ff", CultureInfo.InvariantCulture);
+                                }
+                                else
+                                {
+                                    DateTime timeStamp = DateTime.Now;
+                                    status = "Booked successfully 2nd time at " + timeStamp.ToString("hh:mm:ss.ff", CultureInfo.InvariantCulture);
+                            
+                                }
+                            }
+                            else // no invoice so book successfully
+                            {
+
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            status = "No such court time.";
+                        }
+
+                        if (completFlag)
+                            break;
+                    }
+                }
+
+                teardown(completFlag);
+
+                return completFlag;
             }
             catch
             {              
                 completFlag = false;
-                status = "No such court time. Failed booking.";
+                status = "Failed booking.";
                 teardown(completFlag);
                 return completFlag;
             }
 
-            foreach (var td in timeChoices.FindElements(By.XPath("tbody/tr/td")))
-            {
-
-                foreach (var option in td.FindElements(By.XPath("a")))
-                {
-                    string gmtOption = option.GetAttribute("t");
-                    string locationOption = option.GetAttribute("l");
-                    string timeOption = option.Text;
-
-                    if (locationOption == "6" && timeOption == myCourtTime)
-                    {
-                        option.Click();
-                        if (checkInvoice(testFlag))
-                        {
-                            // cancel it
-                            IWebElement btnLink;
-                            btnLink = m_driver.FindElement(By.Id("cancel"));
-                            btnLink.Click();
-
-                            // it might be caused by running too early, run it again
-                            Thread.Sleep(2000);
-                            option.Click();
-
-                            if (checkInvoice(testFlag))
-                            {
-                                // still not good so cancel it
-                                btnLink = m_driver.FindElement(By.Id("cancel"));
-                                btnLink.Click();
-                            }
-                            else
-                            {
-                                status = "Booked successfully 2nd time.";
-                            }
-                        }
-                        else // no invoice so book successfully
-                        {
-                            
-                        }
-                        break;
-                    }
-                    else
-                    {
-                        status = "No such court time.";
-                    }
-
-                    if (completFlag)
-                        break;
-                }
-            }
-
-            teardown(completFlag);
-
-            return completFlag;
+            
         }
 
         // return TRUE if there is invoice
         // return FALSE if there is no invoice
         private bool checkInvoice(bool testFlag)
         {
-            Thread.Sleep(1000);
+            Thread.Sleep(500);
 
             m_driver.SwitchTo().Window(m_driver.WindowHandles.Last());
-            Thread.Sleep(2000);
+            Thread.Sleep(100);
 
             IWebElement invoiceBox = m_driver.FindElement(By.ClassName("userbox"));
             IWebElement btnLink;
@@ -345,7 +382,9 @@ namespace CourtBookingApp
                     btnLink = m_driver.FindElement(By.Id("confirm"));
                 btnLink.Click();
 
-                status = "Booked successfully";
+                DateTime timeStamp = DateTime.Now;
+
+                status = "Booked successfully at " + timeStamp.ToString("hh:mm:ss.ff", CultureInfo.InvariantCulture);
                 completFlag = true;
                 return false;
             }
@@ -362,8 +401,9 @@ namespace CourtBookingApp
 
         private void teardown(bool resultFlag)
         {
+            Thread.Sleep(1000);
             closeBrowser();
-          
+            Thread.Sleep(1000);
             var tokenResult = CommonApi.GetToken("wxb52657827a246f81", "ce3f87fd605221d29cd799c21169d5c1");
             
             SendToWeChat(tokenResult, resultFlag);
