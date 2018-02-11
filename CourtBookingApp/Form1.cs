@@ -35,6 +35,7 @@ namespace CourtBookingApp
         private string notificationStr;
         private string[] timeStr = new string[31];
         private string status = "Failed";
+        private int delayVal=0;
 
         public void generateTimeStr()
         {
@@ -141,7 +142,7 @@ namespace CourtBookingApp
                 dateTime = dateTime.Add(oneDay);
             }
 
-            TimeSpan ts = new TimeSpan(2, 00, 18);
+            TimeSpan ts = new TimeSpan(2, 00, 35);
             DateTime startTime = dateTime.Subtract(ts);
 
             notificationStr = "Program will start from " + startTime.ToShortTimeString(); ;
@@ -158,13 +159,30 @@ namespace CourtBookingApp
                 tbTime.Visible = true;
 
             // add default username and password here
+            tbUserName.Text = "zhungtm@hotmail.com";
+            tbPassword.Text = "Hello@123";
             userNameStr = tbUserName.Text;
             passWordStr = tbPassword.Text;
 
             notificationName = cbName.GetItemText(cbName.SelectedItem);
             myCourtTime = cbTime.GetItemText(cbTime.SelectedItem);
             myCourtPeriod = cbPeriod.GetItemText(cbPeriod.SelectedItem);
-
+            string delayStr = tbDelay.Text;
+            if (delayStr == "")
+                delayVal = 0;
+            else
+            {
+                try
+                {
+                    delayVal = Convert.ToInt32(delayStr);
+                    if (delayVal < 0)
+                        delayVal = 0;
+                }
+                catch
+                {
+                    delayVal = 0;
+                }
+            }
             if (testFlag )
             {
                 if (tbTime.Text != "")
@@ -275,8 +293,8 @@ namespace CourtBookingApp
             IWebElement searchBtn = m_driver.FindElement(By.Id("reserve-court-search"));
             searchBtn.Click();
 
-            // wait 2 seconds for retriving court information finished
-            Thread.Sleep(2000);
+            // wait 3 seconds for retriving court information finished
+            Thread.Sleep(3000);
             
             IWebElement timeChoices ;
             try
@@ -300,39 +318,44 @@ namespace CourtBookingApp
                                     break;
                                
                             }
+                           
+                            // extra delay seconds in case my colock is faster than the server one
+                            Thread.Sleep(delayVal);
 
-                            Thread.Sleep(1700);
                             option.Click();
+
+                            try
+                            {
+                                WebDriverWait wait = new WebDriverWait(m_driver, TimeSpan.FromSeconds(5));
+                                bool popupWindowHandle = wait.Until<bool>((d) =>
+                                {
+                                    bool newWindow = false;
+
+                                    if (m_driver.FindElement(By.ClassName("userbox")).Text.Contains("No Invoice"))
+                                    {
+                                        newWindow = true;
+                                    }
+
+                                    return newWindow;
+
+                                });
+                            }
+                            catch
+                            {
+                                m_driver.SwitchTo().Window(m_driver.WindowHandles.Last());
+                                // just place holder. It will be handled outside.
+                            }
+
                             if (checkInvoice(testFlag))
                             {
                                 // come in here means there is invoice, will be charged money
-                                // cancel it
-                                IWebElement btnLink;
-                                btnLink = m_driver.FindElement(By.Id("cancel"));
-                                btnLink.Click();
-
-                                // it might be caused by running too early, run it again
-                               // Thread.Sleep(1000);
-                                option.Click();
-
-                                if (checkInvoice(testFlag))
-                                {
-                                    // still not good so cancel it
-                                    DateTime timeStamp = DateTime.Now;
-                                    btnLink = m_driver.FindElement(By.Id("cancel"));
-                                    btnLink.Click();
-                                    status = "Court is not free after 2nd time at " + timeStamp.ToString("hh:mm:ss.ff", CultureInfo.InvariantCulture);
-                                }
-                                else
-                                {
-                                    DateTime timeStamp = DateTime.Now;
-                                    status = "Booked successfully 2nd time at " + timeStamp.ToString("hh:mm:ss.ff", CultureInfo.InvariantCulture);
-                            
-                                }
+                                // cancel it.
+                                                               
                             }
                             else // no invoice so book successfully
                             {
-
+                                // double check whether it is listed in web page
+                                doubleCheck();                                
                             }
                             break;
                         }
@@ -346,12 +369,14 @@ namespace CourtBookingApp
                     }
                 }
 
+                
+
                 teardown(completFlag);
 
                 return completFlag;
             }
             catch
-            {              
+            {                  
                 completFlag = false;
                 status = "Failed booking.";
                 teardown(completFlag);
@@ -361,15 +386,41 @@ namespace CourtBookingApp
             
         }
 
+        private void doubleCheck()
+        {
+            closeBrowser();
+            Thread.Sleep(2000);
+            startBrowser();
+            openWebPage();
+
+            IWebElement usernameTextBox = m_driver.FindElement(By.XPath(".//*[@name='login']"));
+
+            IWebElement passwordTextBox = m_driver.FindElement(By.Id("password"));
+            IWebElement signInButton = m_driver.FindElement(By.Id("signin_login_form"));
+            usernameTextBox.SendKeys(userNameStr);
+
+
+            IJavaScriptExecutor js = (IJavaScriptExecutor)m_driver;
+            
+            js.ExecuteScript(string.Format("document.getElementById('password').value='{0}';", passWordStr));
+
+            signInButton.Submit();
+
+            m_driver.Url = "https://cpac.clubautomation.com/event/reserve-court-new";
+            IWebElement reservation = m_driver.FindElement(By.Id("table-reservation-list"));
+            if (reservation.Text.Contains(myCourtTime.ToUpper()))
+                status += " It is real.";
+            else
+                status += " It is not real.";
+        }
+
         // return TRUE if there is invoice
         // return FALSE if there is no invoice
         private bool checkInvoice(bool testFlag)
         {
-            Thread.Sleep(500);
 
-            m_driver.SwitchTo().Window(m_driver.WindowHandles.Last());
-            Thread.Sleep(100);
-
+           // m_driver.SwitchTo().Window(m_driver.WindowHandles.Last());
+           
             IWebElement invoiceBox = m_driver.FindElement(By.ClassName("userbox"));
             IWebElement btnLink;
             if (invoiceBox.Text.Contains("No Invoice"))
@@ -390,6 +441,8 @@ namespace CourtBookingApp
             }
             else
             {
+                btnLink = m_driver.FindElement(By.Id("cancel"));
+                btnLink.Click();
                 status = "Court is not free.";
                 completFlag = false;
                 return true;
@@ -401,9 +454,9 @@ namespace CourtBookingApp
 
         private void teardown(bool resultFlag)
         {
-            Thread.Sleep(1000);
+            Thread.Sleep(700);
             closeBrowser();
-            Thread.Sleep(1000);
+            Thread.Sleep(700);
             var tokenResult = CommonApi.GetToken("wxb52657827a246f81", "ce3f87fd605221d29cd799c21169d5c1");
             
             SendToWeChat(tokenResult, resultFlag);
