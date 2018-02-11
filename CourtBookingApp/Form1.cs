@@ -158,9 +158,7 @@ namespace CourtBookingApp
             if (testFlag)
                 tbTime.Visible = true;
 
-            // add default username and password here
-            tbUserName.Text = "zhungtm@hotmail.com";
-            tbPassword.Text = "Hello@123";
+            
             userNameStr = tbUserName.Text;
             passWordStr = tbPassword.Text;
 
