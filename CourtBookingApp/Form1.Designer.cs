@@ -42,12 +42,15 @@
             this.cbPeriod = new System.Windows.Forms.ComboBox();
             this.lbNote = new System.Windows.Forms.Label();
             this.cbName = new System.Windows.Forms.ComboBox();
+            this.lbDelay = new System.Windows.Forms.Label();
+            this.tbDelay = new System.Windows.Forms.TextBox();
+            this.lbMs = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // lbUsername
             // 
             this.lbUsername.AutoSize = true;
-            this.lbUsername.Location = new System.Drawing.Point(60, 59);
+            this.lbUsername.Location = new System.Drawing.Point(40, 59);
             this.lbUsername.Name = "lbUsername";
             this.lbUsername.Size = new System.Drawing.Size(55, 13);
             this.lbUsername.TabIndex = 0;
@@ -55,7 +58,7 @@
             // 
             // btnStart
             // 
-            this.btnStart.Location = new System.Drawing.Point(226, 261);
+            this.btnStart.Location = new System.Drawing.Point(226, 283);
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(75, 23);
             this.btnStart.TabIndex = 1;
@@ -66,7 +69,7 @@
             // lbPassword
             // 
             this.lbPassword.AutoSize = true;
-            this.lbPassword.Location = new System.Drawing.Point(62, 100);
+            this.lbPassword.Location = new System.Drawing.Point(36, 100);
             this.lbPassword.Name = "lbPassword";
             this.lbPassword.Size = new System.Drawing.Size(53, 13);
             this.lbPassword.TabIndex = 2;
@@ -75,7 +78,7 @@
             // lbTime
             // 
             this.lbTime.AutoSize = true;
-            this.lbTime.Location = new System.Drawing.Point(60, 169);
+            this.lbTime.Location = new System.Drawing.Point(37, 169);
             this.lbTime.Name = "lbTime";
             this.lbTime.Size = new System.Drawing.Size(58, 13);
             this.lbTime.TabIndex = 3;
@@ -108,7 +111,7 @@
             // lbNotification
             // 
             this.lbNotification.AutoSize = true;
-            this.lbNotification.Location = new System.Drawing.Point(139, 230);
+            this.lbNotification.Location = new System.Drawing.Point(139, 258);
             this.lbNotification.Name = "lbNotification";
             this.lbNotification.Size = new System.Drawing.Size(66, 13);
             this.lbNotification.TabIndex = 7;
@@ -117,7 +120,7 @@
             // 
             // btnTest
             // 
-            this.btnTest.Location = new System.Drawing.Point(142, 261);
+            this.btnTest.Location = new System.Drawing.Point(142, 283);
             this.btnTest.Name = "btnTest";
             this.btnTest.Size = new System.Drawing.Size(75, 23);
             this.btnTest.TabIndex = 8;
@@ -136,7 +139,7 @@
             // lbPeriod
             // 
             this.lbPeriod.AutoSize = true;
-            this.lbPeriod.Location = new System.Drawing.Point(62, 137);
+            this.lbPeriod.Location = new System.Drawing.Point(37, 137);
             this.lbPeriod.Name = "lbPeriod";
             this.lbPeriod.Size = new System.Drawing.Size(65, 13);
             this.lbPeriod.TabIndex = 10;
@@ -153,7 +156,7 @@
             // lbNote
             // 
             this.lbNote.AutoSize = true;
-            this.lbNote.Location = new System.Drawing.Point(65, 200);
+            this.lbNote.Location = new System.Drawing.Point(36, 200);
             this.lbNote.Name = "lbNote";
             this.lbNote.Size = new System.Drawing.Size(60, 13);
             this.lbNote.TabIndex = 12;
@@ -167,11 +170,39 @@
             this.cbName.Size = new System.Drawing.Size(159, 21);
             this.cbName.TabIndex = 13;
             // 
+            // lbDelay
+            // 
+            this.lbDelay.AutoSize = true;
+            this.lbDelay.Location = new System.Drawing.Point(36, 233);
+            this.lbDelay.Name = "lbDelay";
+            this.lbDelay.Size = new System.Drawing.Size(95, 13);
+            this.lbDelay.TabIndex = 14;
+            this.lbDelay.Text = "Delay for clock diff";
+            // 
+            // tbDelay
+            // 
+            this.tbDelay.Location = new System.Drawing.Point(142, 229);
+            this.tbDelay.Name = "tbDelay";
+            this.tbDelay.Size = new System.Drawing.Size(159, 20);
+            this.tbDelay.TabIndex = 15;
+            // 
+            // lbMs
+            // 
+            this.lbMs.AutoSize = true;
+            this.lbMs.Location = new System.Drawing.Point(308, 235);
+            this.lbMs.Name = "lbMs";
+            this.lbMs.Size = new System.Drawing.Size(20, 13);
+            this.lbMs.TabIndex = 16;
+            this.lbMs.Text = "ms";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(403, 429);
+            this.Controls.Add(this.lbMs);
+            this.Controls.Add(this.tbDelay);
+            this.Controls.Add(this.lbDelay);
             this.Controls.Add(this.cbName);
             this.Controls.Add(this.lbNote);
             this.Controls.Add(this.cbPeriod);
@@ -187,7 +218,7 @@
             this.Controls.Add(this.btnStart);
             this.Controls.Add(this.lbUsername);
             this.Name = "Form1";
-            this.Text = "Court Book Tool";
+            this.Text = "Court Booking Tool";
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -209,6 +240,9 @@
         private System.Windows.Forms.ComboBox cbPeriod;
         private System.Windows.Forms.Label lbNote;
         private System.Windows.Forms.ComboBox cbName;
+        private System.Windows.Forms.Label lbDelay;
+        private System.Windows.Forms.TextBox tbDelay;
+        private System.Windows.Forms.Label lbMs;
     }
 }
 
